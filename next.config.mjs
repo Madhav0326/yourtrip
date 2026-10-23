@@ -5,6 +5,9 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'images.pexels.com'],
   },
+  experimental: {
+    cpus: 1,
+  },
 };
 
 export default nextConfig;

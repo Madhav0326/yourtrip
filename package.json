@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:providers": "npx tsx src/lib/providers/__tests__/runProviderTests.ts"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

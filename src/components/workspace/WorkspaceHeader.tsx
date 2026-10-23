@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Trip } from '@/types/trip';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDateDisplay } from '@/lib/utils';
+import { WeatherGlance } from '@/components/workspace/WeatherGlance';
 import {
   Compass,
   FileDown,
@@ -55,6 +56,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
                   <span>Saved on this device</span>
                 </span>
               )}
+              <WeatherGlance destination={trip.destination} startDate={trip.startDate} />
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1 font-medium">
