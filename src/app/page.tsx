@@ -6,19 +6,13 @@ import { motion } from 'framer-motion';
 import {
   Compass,
   Sparkles,
-  Map,
   ShieldCheck,
-  Split,
-  CalendarCheck2,
-  FileDown,
-  Layers,
   ArrowRight,
-  Clock,
   Activity,
-  HeartHandshake,
 } from 'lucide-react';
 import { RouteCanvas } from '@/components/landing/RouteCanvas';
 import { TripCreatorWidget } from '@/components/landing/TripCreatorWidget';
+import { RealLifeDriftDemo } from '@/components/landing/RealLifeDriftDemo';
 import { ProvenanceBadge } from '@/components/ui/ProvenanceBadge';
 import { Button } from '@/components/ui/Button';
 
@@ -58,7 +52,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <main className="relative z-10 flex-1 max-w-5xl mx-auto px-6 pt-6 pb-16 flex flex-col items-center text-center">
+      <main className="relative z-10 flex-1 max-w-5xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-16 flex flex-col items-center text-center">
         {/* Core Value Pill */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -66,7 +60,7 @@ export default function LandingPage() {
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-canvas-100 border border-canvas-300 text-xs font-semibold text-slate-700 shadow-2xs mb-6"
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>The Digital Companion Before, During & After Travel</span>
+          <span>The Digital Operating System Before, During & After Travel</span>
         </motion.div>
 
         {/* Hero Title */}
@@ -89,12 +83,146 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mt-5 text-base sm:text-xl text-slate-600 max-w-2xl leading-relaxed"
         >
-          Stop switching between Maps, Splitwise, Notes, WhatsApp, and Weather apps.
-          Meet your personal trip operating system that adapts when real travel changes.
+          Stop juggling fragmented apps. Meet your personal trip operating system that adapts
+          when real life changes—with zero silent overrides.
         </motion.p>
 
+        {/* Quick CTA Bridge */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mt-6 flex flex-wrap items-center justify-center gap-3"
+        >
+          <Link href="#drift-demo">
+            <Button size="md" variant="secondary" className="rounded-2xl gap-2 font-bold shadow-2xs">
+              <Activity className="w-4 h-4 text-terracotta-500" />
+              <span>See Drift Engine in Action</span>
+            </Button>
+          </Link>
+          <Link href="#create-trip">
+            <Button size="md" variant="primary" className="rounded-2xl gap-2 font-bold shadow-warm">
+              <span>Create Trip Workspace</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+        </motion.div>
+
+        {/* Interactive Real-Life Drift Engine Demonstration */}
+        <div id="drift-demo" className="w-full mt-10">
+          <RealLifeDriftDemo />
+        </div>
+
+        {/* Strengthened Principle: AI ASSISTS, YOU DECIDE */}
+        <div className="w-full mt-14 bg-white/90 backdrop-blur-md rounded-4xl border border-canvas-200 p-6 sm:p-8 shadow-warm text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-canvas-200">
+            <div>
+              <span className="text-xs uppercase font-extrabold tracking-wider text-terracotta-600 block">
+                Product Core Philosophy
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                AI Assists. You Decide. Always.
+              </h3>
+            </div>
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 self-start sm:self-auto border border-canvas-300">
+              Not an Autonomous Black Box
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
+            {/* 1. Recommends */}
+            <div className="p-4 rounded-2xl bg-canvas-50 border border-canvas-200 flex flex-col justify-between">
+              <div>
+                <div className="w-8 h-8 rounded-xl bg-terracotta-100 text-terracotta-700 flex items-center justify-center font-bold text-xs mb-3">
+                  01
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">AI Recommends</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Synthesizes geographic proximity, open hours, and historical travel buffers to draft realistic schedules.
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Explains */}
+            <div className="p-4 rounded-2xl bg-canvas-50 border border-canvas-200 flex flex-col justify-between">
+              <div>
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs mb-3">
+                  02
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">AI Explains</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Every suggestion includes transparent reasoning—why an activity is timed for sunset or early morning crowd avoidance.
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Compares */}
+            <div className="p-4 rounded-2xl bg-canvas-50 border border-canvas-200 flex flex-col justify-between">
+              <div>
+                <div className="w-8 h-8 rounded-xl bg-forest-100 text-forest-800 flex items-center justify-center font-bold text-xs mb-3">
+                  03
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">AI Compares</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Surfaces real trade-offs: faster transit vs scenic routes, high-tempo sightseeing vs relaxed dining pacing.
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Predicts Consequences */}
+            <div className="p-4 rounded-2xl bg-canvas-50 border border-canvas-200 flex flex-col justify-between">
+              <div>
+                <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-bold text-xs mb-3">
+                  04
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">AI Predicts Consequences</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  When you linger 45 minutes late, the engine warns you before tickets expire, tables cancel, or sunset passes.
+                </p>
+              </div>
+            </div>
+
+            {/* 5. User Chooses */}
+            <div className="p-4 rounded-2xl bg-canvas-50 border border-canvas-200 flex flex-col justify-between">
+              <div>
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold text-xs mb-3">
+                  05
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">User Chooses</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  The system never silently modifies your bookings or drops activities. You select your preferred resolution.
+                </p>
+              </div>
+            </div>
+
+            {/* 6. User Overrides Everything */}
+            <div className="p-4 rounded-2xl bg-canvas-50 border border-canvas-200 flex flex-col justify-between">
+              <div>
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs mb-3">
+                  06
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">User Overrides Everything</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Reorder, delete, drag, adjust durations, or enter custom stops anytime. You remain the sole authority on your journey.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Frictionless Trip Creator Section */}
-        <div id="create-trip" className="w-full mt-10">
+        <div id="create-trip" className="w-full mt-16 scroll-mt-24">
+          <div className="text-center mb-6">
+            <span className="text-xs uppercase font-extrabold tracking-wider text-terracotta-600 block">
+              Start Your Journey
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
+              Create Your Trip Workspace
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-lg mx-auto">
+              Just 4 essential inputs to get started. No 20-step questionnaires. Personalize deeper inside your workspace.
+            </p>
+          </div>
           <TripCreatorWidget />
         </div>
 

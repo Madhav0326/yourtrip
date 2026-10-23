@@ -246,13 +246,33 @@ export const useTripStore = create<TripStoreState>()(
           }
         } else if (choiceId === 'MOVE_TO_NEXT_DAY') {
           const lastAffected = activeCascadeReport.affectedItems[activeCascadeReport.affectedItems.length - 1];
-          if (lastAffected && currentTrip.days[activeDayIndex + 1]) {
-            // Remove from current day, add to next day
+          if (lastAffected) {
+            // Remove from current day
             updatedDay = {
               ...currentDay,
               items: currentDay.items.filter((i) => i.id !== lastAffected.item.id),
             };
-            const nextDay = currentTrip.days[activeDayIndex + 1];
+
+            const nextDayIndex = activeDayIndex + 1;
+            let updatedDays = [...currentTrip.days];
+            let nextDay = updatedDays[nextDayIndex];
+
+            if (!nextDay) {
+              const lastDayDate = new Date(currentDay.date);
+              lastDayDate.setDate(lastDayDate.getDate() + 1);
+              const nextDayNum = currentTrip.days.length + 1;
+              nextDay = {
+                id: `day_${currentTrip.id}_${nextDayNum}`,
+                tripId: currentTrip.id,
+                dayNumber: nextDayNum,
+                date: lastDayDate.toISOString().split('T')[0],
+                themeTitle: `Extension & Leisure Day ${nextDayNum}`,
+                items: [],
+                summary: `Added day to absorb rescheduled activities.`,
+              };
+              updatedDays.push(nextDay);
+            }
+
             const updatedNextDay: DayPlan = {
               ...nextDay,
               items: [
@@ -262,13 +282,14 @@ export const useTripStore = create<TripStoreState>()(
                   dayId: nextDay.id,
                   order: nextDay.items.length + 1,
                   timeSlot: { plannedStart: '17:00', plannedEnd: '18:30' },
+                  status: 'PLANNED',
                 },
               ],
             };
 
-            const updatedDays = currentTrip.days.map((d, idx) => {
+            updatedDays = updatedDays.map((d, idx) => {
               if (idx === activeDayIndex) return updatedDay;
-              if (idx === activeDayIndex + 1) return updatedNextDay;
+              if (idx === nextDayIndex) return updatedNextDay;
               return d;
             });
 

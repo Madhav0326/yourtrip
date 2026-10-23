@@ -1,0 +1,538 @@
+export type ResolutionOptionId = 'SHIFT_ALL' | 'SHORTEN' | 'SKIP' | 'MOVE_TOMORROW';
+
+export interface ActivityDisplay {
+  id: string;
+  name: string;
+  category: 'ATTRACTION' | 'FOOD' | 'BEACH';
+  location: string;
+  plannedTime: string;
+  originalStart: string;
+  originalEnd: string;
+  currentStart: string;
+  currentEnd: string;
+  status: 'ON_TIME' | 'DELAYED' | 'SHORTENED' | 'SKIPPED' | 'MOVED';
+  tagNote?: string;
+  isSunsetRisk?: boolean;
+}
+
+export interface TravelLegDisplay {
+  from: string;
+  to: string;
+  originalMins: number;
+  currentMins: number;
+  mode: string;
+  traffic: 'LIGHT' | 'MODERATE' | 'HEAVY';
+  isDelayed?: boolean;
+}
+
+export interface ScenarioData {
+  timeLostMins: number;
+  summaryMessage: string;
+  activities: ActivityDisplay[];
+  legs: TravelLegDisplay[];
+}
+
+export const SCENARIO_PLANNED: ScenarioData = {
+  timeLostMins: 0,
+  summaryMessage: 'Original planned itinerary on schedule with balanced travel buffers.',
+  activities: [
+    {
+      id: 'act-1',
+      name: 'Fort Aguada & Lighthouse',
+      category: 'ATTRACTION',
+      location: 'Sinquerim, Candolim',
+      plannedTime: '2:00 PM – 3:30 PM',
+      originalStart: '14:00',
+      originalEnd: '15:30',
+      currentStart: '14:00',
+      currentEnd: '15:30',
+      status: 'ON_TIME',
+      tagNote: 'Portuguese coastal fort • 90 min visit',
+    },
+    {
+      id: 'act-2',
+      name: 'Fisherman’s Wharf Goan Seafood Lunch',
+      category: 'FOOD',
+      location: 'Candolim Beach Road',
+      plannedTime: '3:45 PM – 5:00 PM',
+      originalStart: '15:45',
+      originalEnd: '17:00',
+      currentStart: '15:45',
+      currentEnd: '17:00',
+      status: 'ON_TIME',
+      tagNote: 'Authentic Goan curry & fresh catch',
+    },
+    {
+      id: 'act-3',
+      name: 'Baga Beach Golden Hour Sunset',
+      category: 'BEACH',
+      location: 'Baga Coastline',
+      plannedTime: '5:15 PM – 7:15 PM',
+      originalStart: '17:15',
+      originalEnd: '19:15',
+      currentStart: '17:15',
+      currentEnd: '19:15',
+      status: 'ON_TIME',
+      tagNote: 'Golden hour sunset at 6:05 PM',
+    },
+    {
+      id: 'act-4',
+      name: 'Thalassa Clifftop Dinner & Live Music',
+      category: 'FOOD',
+      location: 'Small Vagator',
+      plannedTime: '7:45 PM – 9:45 PM',
+      originalStart: '19:45',
+      originalEnd: '21:45',
+      currentStart: '19:45',
+      currentEnd: '21:45',
+      status: 'ON_TIME',
+      tagNote: 'Reserved seating for 7:45 PM',
+    },
+  ],
+  legs: [
+    {
+      from: 'Fort Aguada',
+      to: 'Fisherman’s Wharf',
+      originalMins: 15,
+      currentMins: 15,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+    {
+      from: 'Fisherman’s Wharf',
+      to: 'Baga Beach',
+      originalMins: 15,
+      currentMins: 15,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+    {
+      from: 'Baga Beach',
+      to: 'Thalassa',
+      originalMins: 30,
+      currentMins: 30,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+    },
+  ],
+};
+
+export const SCENARIO_DELAYED: ScenarioData = {
+  timeLostMins: 45,
+  summaryMessage: 'Running 45m late at Fort Aguada. 3 downstream activities and 2 travel legs pushed back.',
+  activities: [
+    {
+      id: 'act-1',
+      name: 'Fort Aguada & Lighthouse',
+      category: 'ATTRACTION',
+      location: 'Sinquerim, Candolim',
+      plannedTime: '2:00 PM – 3:30 PM',
+      originalStart: '14:00',
+      originalEnd: '15:30',
+      currentStart: '14:00',
+      currentEnd: '16:15',
+      status: 'DELAYED',
+      tagNote: '⏳ Running 45 min over schedule (departs 4:15 PM)',
+    },
+    {
+      id: 'act-2',
+      name: 'Fisherman’s Wharf Goan Seafood Lunch',
+      category: 'FOOD',
+      location: 'Candolim Beach Road',
+      plannedTime: '3:45 PM – 5:00 PM',
+      originalStart: '15:45',
+      originalEnd: '17:00',
+      currentStart: '16:40',
+      currentEnd: '17:55',
+      status: 'DELAYED',
+      tagNote: '⚠️ Pushed +55m • Kitchen closes at 5:00 PM',
+    },
+    {
+      id: 'act-3',
+      name: 'Baga Beach Golden Hour Sunset',
+      category: 'BEACH',
+      location: 'Baga Coastline',
+      plannedTime: '5:15 PM – 7:15 PM',
+      originalStart: '17:15',
+      originalEnd: '19:15',
+      currentStart: '18:15',
+      currentEnd: '19:45',
+      status: 'DELAYED',
+      tagNote: '🚨 Misses Sunset! Arrival 6:15 PM is 10 min past 6:05 PM sunset',
+      isSunsetRisk: true,
+    },
+    {
+      id: 'act-4',
+      name: 'Thalassa Clifftop Dinner & Live Music',
+      category: 'FOOD',
+      location: 'Small Vagator',
+      plannedTime: '7:45 PM – 9:45 PM',
+      originalStart: '19:45',
+      originalEnd: '21:45',
+      currentStart: '20:30',
+      currentEnd: '22:30',
+      status: 'DELAYED',
+      tagNote: '⚠️ Pushed +45m • Table reservation at risk',
+    },
+  ],
+  legs: [
+    {
+      from: 'Fort Aguada',
+      to: 'Fisherman’s Wharf',
+      originalMins: 15,
+      currentMins: 25,
+      mode: 'Cab',
+      traffic: 'HEAVY',
+      isDelayed: true,
+    },
+    {
+      from: 'Fisherman’s Wharf',
+      to: 'Baga Beach',
+      originalMins: 15,
+      currentMins: 20,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+      isDelayed: true,
+    },
+    {
+      from: 'Baga Beach',
+      to: 'Thalassa',
+      originalMins: 30,
+      currentMins: 35,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+    },
+  ],
+};
+
+export const SCENARIO_SHIFT_ALL: ScenarioData = {
+  timeLostMins: 45,
+  summaryMessage: 'Choice Applied: Shifted downstream stops. All activities preserved; day extends to 10:30 PM.',
+  activities: [
+    {
+      id: 'act-1',
+      name: 'Fort Aguada & Lighthouse',
+      category: 'ATTRACTION',
+      location: 'Sinquerim, Candolim',
+      plannedTime: '2:00 PM – 3:30 PM',
+      originalStart: '14:00',
+      originalEnd: '15:30',
+      currentStart: '14:00',
+      currentEnd: '16:00',
+      status: 'DELAYED',
+      tagNote: 'Relaxed visit concluded at 4:00 PM',
+    },
+    {
+      id: 'act-2',
+      name: 'Fisherman’s Wharf Goan Seafood Lunch',
+      category: 'FOOD',
+      location: 'Candolim Beach Road',
+      plannedTime: '3:45 PM – 5:00 PM',
+      originalStart: '15:45',
+      originalEnd: '17:00',
+      currentStart: '16:20',
+      currentEnd: '17:35',
+      status: 'DELAYED',
+      tagNote: 'Shifted +35m • Late lunch seating confirmed',
+    },
+    {
+      id: 'act-3',
+      name: 'Baga Beach Golden Hour Sunset',
+      category: 'BEACH',
+      location: 'Baga Coastline',
+      plannedTime: '5:15 PM – 7:15 PM',
+      originalStart: '17:15',
+      originalEnd: '19:15',
+      currentStart: '17:55',
+      currentEnd: '19:45',
+      status: 'DELAYED',
+      tagNote: 'Arrival 5:55 PM • Catches peak horizon sunset at 6:05 PM',
+    },
+    {
+      id: 'act-4',
+      name: 'Thalassa Clifftop Dinner & Live Music',
+      category: 'FOOD',
+      location: 'Small Vagator',
+      plannedTime: '7:45 PM – 9:45 PM',
+      originalStart: '19:45',
+      originalEnd: '21:45',
+      currentStart: '20:30',
+      currentEnd: '22:30',
+      status: 'DELAYED',
+      tagNote: 'Shifted to 8:30 PM late seating • Zero rush',
+    },
+  ],
+  legs: [
+    {
+      from: 'Fort Aguada',
+      to: 'Fisherman’s Wharf',
+      originalMins: 15,
+      currentMins: 20,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+    },
+    {
+      from: 'Fisherman’s Wharf',
+      to: 'Baga Beach',
+      originalMins: 15,
+      currentMins: 20,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+    },
+    {
+      from: 'Baga Beach',
+      to: 'Thalassa',
+      originalMins: 30,
+      currentMins: 35,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+    },
+  ],
+};
+
+export const SCENARIO_SHORTEN: ScenarioData = {
+  timeLostMins: 0,
+  summaryMessage: 'Choice Applied: Fort Aguada shortened by 45m. Full recovery; lunch & 6:05 PM sunset restored!',
+  activities: [
+    {
+      id: 'act-1',
+      name: 'Fort Aguada & Lighthouse',
+      category: 'ATTRACTION',
+      location: 'Sinquerim, Candolim',
+      plannedTime: '2:00 PM – 3:30 PM',
+      originalStart: '14:00',
+      originalEnd: '15:30',
+      currentStart: '14:00',
+      currentEnd: '15:30',
+      status: 'SHORTENED',
+      tagNote: '✂️ Shortened visit to 45 mins • Wrapped up on schedule',
+    },
+    {
+      id: 'act-2',
+      name: 'Fisherman’s Wharf Goan Seafood Lunch',
+      category: 'FOOD',
+      location: 'Candolim Beach Road',
+      plannedTime: '3:45 PM – 5:00 PM',
+      originalStart: '15:45',
+      originalEnd: '17:00',
+      currentStart: '15:45',
+      currentEnd: '17:00',
+      status: 'ON_TIME',
+      tagNote: '✅ Original schedule preserved (3:45 PM)',
+    },
+    {
+      id: 'act-3',
+      name: 'Baga Beach Golden Hour Sunset',
+      category: 'BEACH',
+      location: 'Baga Coastline',
+      plannedTime: '5:15 PM – 7:15 PM',
+      originalStart: '17:15',
+      originalEnd: '19:15',
+      currentStart: '17:15',
+      currentEnd: '19:15',
+      status: 'ON_TIME',
+      tagNote: '🌅 Prime 6:05 PM sunset caught comfortably',
+    },
+    {
+      id: 'act-4',
+      name: 'Thalassa Clifftop Dinner & Live Music',
+      category: 'FOOD',
+      location: 'Small Vagator',
+      plannedTime: '7:45 PM – 9:45 PM',
+      originalStart: '19:45',
+      originalEnd: '21:45',
+      currentStart: '19:45',
+      currentEnd: '21:45',
+      status: 'ON_TIME',
+      tagNote: '✅ On time for 7:45 PM reservation',
+    },
+  ],
+  legs: [
+    {
+      from: 'Fort Aguada',
+      to: 'Fisherman’s Wharf',
+      originalMins: 15,
+      currentMins: 15,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+    {
+      from: 'Fisherman’s Wharf',
+      to: 'Baga Beach',
+      originalMins: 15,
+      currentMins: 15,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+    {
+      from: 'Baga Beach',
+      to: 'Thalassa',
+      originalMins: 30,
+      currentMins: 30,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+  ],
+};
+
+export const SCENARIO_SKIP: ScenarioData = {
+  timeLostMins: 0,
+  summaryMessage: 'Choice Applied: Skipped sit-down restaurant lunch. Direct to Baga Beach for sunset snacks.',
+  activities: [
+    {
+      id: 'act-1',
+      name: 'Fort Aguada & Lighthouse',
+      category: 'ATTRACTION',
+      location: 'Sinquerim, Candolim',
+      plannedTime: '2:00 PM – 3:30 PM',
+      originalStart: '14:00',
+      originalEnd: '15:30',
+      currentStart: '14:00',
+      currentEnd: '16:15',
+      status: 'DELAYED',
+      tagNote: 'Enjoyed full unrushed exploration until 4:15 PM',
+    },
+    {
+      id: 'act-2',
+      name: 'Fisherman’s Wharf Goan Seafood Lunch',
+      category: 'FOOD',
+      location: 'Candolim Beach Road',
+      plannedTime: '3:45 PM – 5:00 PM',
+      originalStart: '15:45',
+      originalEnd: '17:00',
+      currentStart: '—',
+      currentEnd: '—',
+      status: 'SKIPPED',
+      tagNote: '⏩ Skipped sitting • Grab quick beach snacks at Baga',
+    },
+    {
+      id: 'act-3',
+      name: 'Baga Beach Golden Hour Sunset',
+      category: 'BEACH',
+      location: 'Baga Coastline',
+      plannedTime: '5:15 PM – 7:15 PM',
+      originalStart: '17:15',
+      originalEnd: '19:15',
+      currentStart: '16:45',
+      currentEnd: '19:15',
+      status: 'ON_TIME',
+      tagNote: 'Arrived early at 4:45 PM • Best sun lounger spot',
+    },
+    {
+      id: 'act-4',
+      name: 'Thalassa Clifftop Dinner & Live Music',
+      category: 'FOOD',
+      location: 'Small Vagator',
+      plannedTime: '7:45 PM – 9:45 PM',
+      originalStart: '19:45',
+      originalEnd: '21:45',
+      currentStart: '19:45',
+      currentEnd: '21:45',
+      status: 'ON_TIME',
+      tagNote: '✅ On time for 7:45 PM clifftop dinner',
+    },
+  ],
+  legs: [
+    {
+      from: 'Fort Aguada',
+      to: 'Baga Beach (Direct)',
+      originalMins: 25,
+      currentMins: 25,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+    {
+      from: 'Baga Beach',
+      to: 'Thalassa',
+      originalMins: 30,
+      currentMins: 30,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+  ],
+};
+
+export const SCENARIO_MOVE_TOMORROW: ScenarioData = {
+  timeLostMins: 0,
+  summaryMessage: 'Choice Applied: Moved Thalassa dinner to Day 2 evening. Evening pace relaxed, no late rush.',
+  activities: [
+    {
+      id: 'act-1',
+      name: 'Fort Aguada & Lighthouse',
+      category: 'ATTRACTION',
+      location: 'Sinquerim, Candolim',
+      plannedTime: '2:00 PM – 3:30 PM',
+      originalStart: '14:00',
+      originalEnd: '15:30',
+      currentStart: '14:00',
+      currentEnd: '16:15',
+      status: 'DELAYED',
+      tagNote: 'Leisurely fort visit until 4:15 PM',
+    },
+    {
+      id: 'act-2',
+      name: 'Fisherman’s Wharf Goan Seafood Lunch',
+      category: 'FOOD',
+      location: 'Candolim Beach Road',
+      plannedTime: '3:45 PM – 5:00 PM',
+      originalStart: '15:45',
+      originalEnd: '17:00',
+      currentStart: '16:40',
+      currentEnd: '18:00',
+      status: 'DELAYED',
+      tagNote: 'Unhurried seaside lunch by the river',
+    },
+    {
+      id: 'act-3',
+      name: 'Baga Beach Sunset & Twilight Stroll',
+      category: 'BEACH',
+      location: 'Baga Coastline',
+      plannedTime: '5:15 PM – 7:15 PM',
+      originalStart: '17:15',
+      originalEnd: '19:15',
+      currentStart: '18:20',
+      currentEnd: '20:30',
+      status: 'ON_TIME',
+      tagNote: 'Evening beach shacks, ocean breeze & candlelit tables',
+    },
+    {
+      id: 'act-4',
+      name: 'Thalassa Clifftop Dinner & Live Music',
+      category: 'FOOD',
+      location: 'Small Vagator',
+      plannedTime: '7:45 PM – 9:45 PM',
+      originalStart: '19:45',
+      originalEnd: '21:45',
+      currentStart: 'Day 2',
+      currentEnd: '19:30',
+      status: 'MOVED',
+      tagNote: '📅 Rescheduled to Day 2 at 7:30 PM • Zero night rush',
+    },
+  ],
+  legs: [
+    {
+      from: 'Fort Aguada',
+      to: 'Fisherman’s Wharf',
+      originalMins: 15,
+      currentMins: 25,
+      mode: 'Cab',
+      traffic: 'MODERATE',
+    },
+    {
+      from: 'Fisherman’s Wharf',
+      to: 'Baga Beach',
+      originalMins: 15,
+      currentMins: 20,
+      mode: 'Cab',
+      traffic: 'LIGHT',
+    },
+  ],
+};
+
+export const PRODUCT_LOOP_STEPS = [
+  { id: 0, label: 'PLAN', title: 'Initial Blueprint', desc: 'Optimized with travel buffers & sunset timings' },
+  { id: 1, label: 'TRAVEL', title: 'Live Journey', desc: 'Active day progression & waypoint pacing' },
+  { id: 2, label: 'REALITY CHANGES', title: 'The Real World Hits', desc: 'Overran at Fort Aguada by 45 mins' },
+  { id: 3, label: 'ADAPT', title: 'Cascade Engine', desc: 'AI predicts impacts; generates 4 choices' },
+  { id: 4, label: 'CONTINUE', title: 'You Decide', desc: 'Zero silent changes. Itinerary settles cleanly.' },
+];

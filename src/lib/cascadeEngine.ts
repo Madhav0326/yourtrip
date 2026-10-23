@@ -185,12 +185,11 @@ export function applyShiftDownstream(
   triggerItem.timeSlot = {
     ...triggerItem.timeSlot,
     actualStart: newStartTime,
-    plannedStart: newStartTime,
-    plannedEnd: addMinutesToTime(newStartTime, duration),
+    actualEnd: addMinutesToTime(newStartTime, duration),
   };
   triggerItem.status = 'DELAYED';
 
-  let runningEndM = parseMinutesFromTime(triggerItem.timeSlot.plannedEnd);
+  let runningEndM = parseMinutesFromTime(triggerItem.timeSlot.actualEnd || triggerItem.timeSlot.plannedEnd);
 
   for (let i = triggerIdx + 1; i < updatedItems.length; i++) {
     const item = updatedItems[i];
@@ -200,9 +199,10 @@ export function applyShiftDownstream(
 
     item.timeSlot = {
       ...item.timeSlot,
-      plannedStart: formatTimeFromMinutes(itemStartM),
-      plannedEnd: formatTimeFromMinutes(itemEndM),
+      actualStart: formatTimeFromMinutes(itemStartM),
+      actualEnd: formatTimeFromMinutes(itemEndM),
     };
+    item.status = 'DELAYED';
 
     runningEndM = itemEndM;
   }
