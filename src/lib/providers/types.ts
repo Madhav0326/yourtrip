@@ -73,7 +73,13 @@ export interface GeocodingProvider {
  */
 export interface PlaceProvider {
   name: string;
-  searchAttractions(lat: number, lng: number, radiusMeters?: number): Promise<ProvenanceValue<AttractionOption[]>>;
+  searchAttractions(
+    lat: number, 
+    lng: number, 
+    radiusMeters?: number,
+    query?: string,
+    category?: string
+  ): Promise<ProvenanceValue<AttractionOption[]>>;
   getPlaceDetails(placeId: string): Promise<ProvenanceValue<AttractionOption>>;
 }
 

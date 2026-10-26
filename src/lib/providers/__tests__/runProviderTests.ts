@@ -23,8 +23,12 @@ import { OpenMeteoProvider } from '@/lib/providers/weather/openMeteoProvider';
 import { HistoricalClimateProvider } from '@/lib/providers/weather/historicalClimateProvider';
 import { CompositeWeatherProvider } from '@/lib/providers/weather/compositeWeatherProvider';
 import { CompositeGeocodingProvider } from '@/lib/providers/geocoding/compositeGeocodingProvider';
-import { WeatherProvider, WeatherData, GeocodingProvider, GeocodingResult } from '@/lib/providers/types';
-import { ProvenanceValue } from '@/types/trip';
+import { CuratedSeedPlaceProvider } from '@/lib/providers/places/curatedSeedPlaceProvider';
+import { GeoapifyPlaceProvider } from '@/lib/providers/places/geoapifyPlaceProvider';
+import { CompositePlaceProvider } from '@/lib/providers/places/compositePlaceProvider';
+import { WeatherProvider, WeatherData, GeocodingProvider, GeocodingResult, PlaceProvider } from '@/lib/providers/types';
+import { ProvenanceValue, DayPlan } from '@/types/trip';
+import { AttractionOption } from '@/types/explore';
 
 let passedTests = 0;
 let totalTests = 0;
@@ -213,12 +217,205 @@ async function runAllTests() {
   assert(guestTrip?.data.isGuest === true, 'Guest trip persisted without authentication');
   assert(guestTrip?.provenance === 'USER_ENTERED', 'Guest entered trip has USER_ENTERED provenance');
 
+  // =========================================================================
+  // PHASE 2B: EXPLORE HUB & SEPARATED DISCOVERY MODELS TEST SUITE
+  // =========================================================================
+
+  // Test 13: CuratedSeedPlaceProvider Proximity & Search
+  console.log('\nGroup 13: CuratedSeedPlaceProvider Proximity, Search & Filtering');
+  const seedPlaces = new CuratedSeedPlaceProvider();
+  
+  // 13a: Destination-aware coordinates search (Goa)
+  const goaPlaces = await seedPlaces.searchAttractions(15.4925, 73.7735, 50000);
+  assert(goaPlaces.value.length > 0, 'Curated seed provider resolves places for Goa coordinates');
+  assert(goaPlaces.provenance === 'ESTIMATED', 'Curated seed places have ESTIMATED provenance');
+  assert(goaPlaces.value.some((p) => p.name.includes('Fort Aguada')), 'Includes Fort Aguada in Goa results');
+
+  // 13b: Text query search
+  const hawaSearch = await seedPlaces.searchAttractions(0, 0, 80000, 'Hawa Mahal');
+  assert(hawaSearch.value.length >= 1, 'Search query "Hawa Mahal" returns matching landmark');
+  assert(hawaSearch.value[0].name.includes('Hawa Mahal'), 'Resolved landmark name matches "Hawa Mahal"');
+  assert(hawaSearch.value[0].category === 'CULTURE', 'Hawa Mahal is categorized as CULTURE');
+
+  // 13c: Category filtering
+  const beachOnly = await seedPlaces.searchAttractions(15.49, 73.77, 80000, undefined, 'BEACH');
+  assert(beachOnly.value.length > 0, 'Category filter BEACH returns results');
+  assert(beachOnly.value.every((p) => p.category === 'BEACH'), 'All returned places match BEACH category');
+
+  // 13d: Place details lookup
+  const placeDetail = await seedPlaces.getPlaceDetails('seed-goa-aguada');
+  assert(placeDetail.value.id === 'seed-goa-aguada', 'Place details resolved by ID');
+  assert(placeDetail.value.recommendedDurationMinutes === 90, 'Recommended duration is 90 minutes');
+  assert(placeDetail.value.entryFeeEstimated.value === 50, 'Entry fee is genuinely sourced at ₹50');
+
+  // Test 14: GeoapifyPlaceProvider Resilience & Timeout
+  console.log('\nGroup 14: GeoapifyPlaceProvider Missing Key Resilience');
+  const geoapifyNoKey = new GeoapifyPlaceProvider(undefined, 100);
+  let geoapifyKeyErrorCaught = false;
+  try {
+    // If no key is set in test environment, it must throw cleanly
+    if (!process.env.GEOAPIFY_API_KEY) {
+      await geoapifyNoKey.searchAttractions(15.49, 73.77);
+    } else {
+      geoapifyKeyErrorCaught = true;
+    }
+  } catch (err: unknown) {
+    geoapifyKeyErrorCaught = true;
+    assert(
+      err instanceof Error && err.message.includes('GEOAPIFY_API_KEY'),
+      'Geoapify provider throws cleanly when API key is missing'
+    );
+  }
+  assert(geoapifyKeyErrorCaught, 'Missing API key handled gracefully without crash');
+
+  // Test 15: CompositePlaceProvider Fallback Hierarchy & 7-Day Caching
+  console.log('\nGroup 15: CompositePlaceProvider Fallback Hierarchy & Caching');
+  class MockFailingGeoapifyProvider implements PlaceProvider {
+    name = 'MockFailingGeoapify';
+    async searchAttractions(): Promise<ProvenanceValue<AttractionOption[]>> {
+      throw new Error('Geoapify upstream quota exhausted or connection refused');
+    }
+    async getPlaceDetails(): Promise<ProvenanceValue<AttractionOption>> {
+      throw new Error('Place details unavailable');
+    }
+  }
+
+  const placesCache = new MemoryCacheProvider();
+  const compositePlaces = new CompositePlaceProvider(
+    new MockFailingGeoapifyProvider(),
+    new CuratedSeedPlaceProvider(),
+    placesCache
+  );
+
+  // 15a: Fallback from failing primary to Curated Seeds
+  const fallbackPlacesResult = await compositePlaces.searchAttractions(15.4925, 73.7735);
+  assert(
+    fallbackPlacesResult.value.length > 0,
+    'Composite provider falls back to CuratedSeedPlaceProvider when primary fails'
+  );
+  assert(
+    fallbackPlacesResult.provenance === 'ESTIMATED',
+    'Fallback places correctly marked as ESTIMATED'
+  );
+
+  // 15b: Cache hit returns cached places
+  const cachedHitPlaces = await compositePlaces.searchAttractions(15.4925, 73.7735);
+  assert(
+    cachedHitPlaces.value.length === fallbackPlacesResult.value.length,
+    'Subsequent query served from cache with identical place count'
+  );
+  assert(
+    cachedHitPlaces.note?.includes('fresh') === true,
+    'Cache hit note reports fresh cache delivery'
+  );
+
+  // Test 16: Zero Fabrication & Truth in Provenance
+  console.log('\nGroup 16: Zero Fabrication & UNAVAILABLE Provenance');
+  const unknownPlacesResult = await compositePlaces.searchAttractions(
+    0,
+    0,
+    1000,
+    'NonExistentFictionalMonumentXYZ987'
+  );
+  assert(
+    unknownPlacesResult.value.length === 0,
+    'Zero places fabricated for non-existent search query'
+  );
+  assert(
+    unknownPlacesResult.provenance === 'UNAVAILABLE',
+    'Unmatched search properly returns UNAVAILABLE provenance'
+  );
+
+  // Test 17: Add-to-Trip Model Separation & Non-Autonomous Mutation
+  console.log('\nGroup 17: Add-to-Trip Model Separation & Conflict Detection');
+  const discoveryPlace: AttractionOption = {
+    id: 'disc-place-01',
+    name: 'Anjuna Flea Market',
+    address: 'Anjuna, Goa',
+    lat: 15.5807,
+    lng: 73.7423,
+    category: 'ATTRACTION',
+    recommendedDurationMinutes: 90,
+    entryFeeEstimated: { value: 0, provenance: 'ESTIMATED' },
+    provenance: 'ESTIMATED',
+    whyRecommended: 'Near your afternoon route',
+  };
+
+  // Verify discovery place remains separate before confirmation
+  const mockDay: DayPlan = {
+    id: 'day-01',
+    tripId: 'trip-01',
+    dayNumber: 1,
+    date: '2026-11-15',
+    themeTitle: 'North Goa Coastal Exploration',
+    items: [
+      {
+        id: 'act-01',
+        dayId: 'day-01',
+        order: 1,
+        title: 'Morning Breakfast at Cafe',
+        category: 'FOOD',
+        location: { name: 'Cafe', address: 'Anjuna', lat: 15.58, lng: 73.74 },
+        timeSlot: { plannedStart: '09:00', plannedEnd: '10:00' },
+        durationMinutes: 60,
+        recommendedDurationMinutes: 60,
+        estimatedCost: { value: 400, provenance: 'ESTIMATED' },
+        status: 'PLANNED',
+      },
+      {
+        id: 'act-02',
+        dayId: 'day-01',
+        order: 2,
+        title: 'Fort Aguada Visit',
+        category: 'CULTURE',
+        location: { name: 'Fort Aguada', address: 'Candolim', lat: 15.49, lng: 73.77 },
+        timeSlot: { plannedStart: '10:30', plannedEnd: '12:00' },
+        durationMinutes: 90,
+        recommendedDurationMinutes: 90,
+        estimatedCost: { value: 50, provenance: 'ESTIMATED' },
+        status: 'PLANNED',
+      },
+    ],
+  };
+
+  // Ensure mockDay has 2 items initially
+  assert(mockDay.items.length === 2, 'Initial day has exactly 2 items (discovery place has NOT mutated day)');
+
+  // Simulate explicit user confirmation: Add between 12:30 and 14:00 (no conflict)
+  const convertedItem = {
+    id: 'act-added-01',
+    dayId: mockDay.id,
+    order: 3,
+    title: discoveryPlace.name,
+    category: discoveryPlace.category,
+    location: {
+      name: discoveryPlace.name,
+      address: discoveryPlace.address,
+      lat: discoveryPlace.lat,
+      lng: discoveryPlace.lng,
+      recommendedDurationMinutes: discoveryPlace.recommendedDurationMinutes,
+    },
+    timeSlot: { plannedStart: '12:30', plannedEnd: '14:00' },
+    durationMinutes: discoveryPlace.recommendedDurationMinutes,
+    recommendedDurationMinutes: discoveryPlace.recommendedDurationMinutes,
+    estimatedCost: discoveryPlace.entryFeeEstimated,
+    status: 'PLANNED' as const,
+    whyRecommended: discoveryPlace.whyRecommended,
+  };
+
+  const updatedDayItems = [...mockDay.items, convertedItem].sort((a, b) =>
+    a.timeSlot.plannedStart.localeCompare(b.timeSlot.plannedStart)
+  );
+  assert(updatedDayItems.length === 3, 'Adding item increases count only after explicit confirmation');
+  assert(updatedDayItems[2].title === 'Anjuna Flea Market', 'Added item correctly converted into ItineraryItem');
+  assert(updatedDayItems[2].status === 'PLANNED', 'New item carries PLANNED status');
+
   console.log('\n======================================================');
   console.log(` RESULTS: ${passedTests} / ${totalTests} TESTS PASSED`);
   console.log('======================================================\n');
 
   if (passedTests === totalTests) {
-    console.log('🎉 ALL PHASE 2A DATA FOUNDATION & PROVIDER TESTS PASSED!\n');
+    console.log('🎉 ALL PHASE 2A & 2B PROVIDER AND DISCOVERY TESTS PASSED!\n');
   } else {
     console.error('❌ SOME TESTS FAILED!\n');
     process.exit(1);

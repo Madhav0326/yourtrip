@@ -5,11 +5,13 @@ import {
   ItineraryItem,
   DayPlan,
   ActivityStatus,
+  ActivityCategory,
   Expense,
   CascadeConflictReport,
   ExportSnapshot,
   TripStyle,
 } from '@/types/trip';
+import { AttractionOption } from '@/types/explore';
 import { createDefaultTrip } from '@/lib/tripSeed';
 import { idbStorage } from '@/lib/idbStorage';
 import {
@@ -50,6 +52,11 @@ interface TripStoreState {
   
   // Activity actions
   setActivityStatus: (activityId: string, status: ActivityStatus) => void;
+  addItineraryItem: (
+    dayId: string,
+    place: AttractionOption,
+    timeSlot: { plannedStart: string; plannedEnd: string }
+  ) => void;
   
   // Cascade & Real-life delay handling
   triggerDelayCheck: (activityId: string, newStartTime: string) => CascadeConflictReport | null;
@@ -200,6 +207,97 @@ export const useTripStore = create<TripStoreState>()(
           currentTrip: updatedTrip,
           guestTrips: state.guestTrips.map((t) => (t.id === updatedTrip.id ? updatedTrip : t)),
         }));
+      },
+
+      addItineraryItem: (dayId, place, timeSlot) => {
+        const { currentTrip, isWhatIfMode, whatIfTripFork } = get();
+        const activeTrip = isWhatIfMode ? whatIfTripFork : currentTrip;
+        if (!activeTrip) return;
+
+        const durationMinutes = place.recommendedDurationMinutes || 60;
+        const targetDayIndex = activeTrip.days.findIndex((d) => d.id === dayId);
+        const dayIdx = targetDayIndex >= 0 ? targetDayIndex : 0;
+        const targetDay = activeTrip.days[dayIdx];
+        if (!targetDay) return;
+
+        const newItem: ItineraryItem = {
+          id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          dayId: targetDay.id,
+          order: targetDay.items.length + 1,
+          title: place.name,
+          category: (place.category as ActivityCategory) || 'ATTRACTION',
+          location: {
+            name: place.name,
+            address: place.address,
+            lat: place.lat,
+            lng: place.lng,
+            openingHours: place.openingHours,
+            recommendedDurationMinutes: durationMinutes,
+          },
+          timeSlot: {
+            plannedStart: timeSlot.plannedStart,
+            plannedEnd: timeSlot.plannedEnd,
+          },
+          durationMinutes,
+          recommendedDurationMinutes: durationMinutes,
+          estimatedCost: place.entryFeeEstimated || {
+            value: 0,
+            provenance: 'ESTIMATED',
+            note: 'Free / self-guided entry',
+          },
+          expectedCrowd: place.crowdTier
+            ? {
+                value: place.crowdTier,
+                provenance: place.provenance,
+                note: place.provenanceNote,
+              }
+            : undefined,
+          whyRecommended: place.whyRecommended,
+          notes: place.description,
+          status: 'PLANNED',
+        };
+
+        const updatedItems = [...targetDay.items, newItem]
+          .sort((a, b) => a.timeSlot.plannedStart.localeCompare(b.timeSlot.plannedStart))
+          .map((item, index) => ({
+            ...item,
+            order: index + 1,
+          }));
+
+        const updatedDays = activeTrip.days.map((day, idx) =>
+          idx === dayIdx ? { ...day, items: updatedItems } : day
+        );
+
+        const updatedTrip = {
+          ...activeTrip,
+          days: updatedDays,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (isWhatIfMode) {
+          set({
+            whatIfTripFork: updatedTrip,
+            selectedActivityId: newItem.id,
+            selectedMapPoint: {
+              lat: newItem.location.lat,
+              lng: newItem.location.lng,
+              title: newItem.location.name,
+              category: newItem.category,
+            },
+          });
+        } else {
+          set((state) => ({
+            currentTrip: updatedTrip,
+            guestTrips: state.guestTrips.map((t) => (t.id === updatedTrip.id ? updatedTrip : t)),
+            selectedActivityId: newItem.id,
+            selectedMapPoint: {
+              lat: newItem.location.lat,
+              lng: newItem.location.lng,
+              title: newItem.location.name,
+              category: newItem.category,
+            },
+          }));
+        }
       },
 
       triggerDelayCheck: (activityId, newStartTime) => {

@@ -13,17 +13,14 @@ import { PdfExportModal } from '@/components/pdf/PdfExportModal';
 import { FeasibilityModal } from '@/components/workspace/FeasibilityModal';
 import { ExpenseModal } from '@/components/workspace/ExpenseModal';
 import { PackingModal } from '@/components/workspace/PackingModal';
-import { Button } from '@/components/ui/Button';
+import { ExploreHub } from '@/components/explore/ExploreHub';
 import {
   Calendar,
   Map,
   IndianRupee,
   Luggage,
-  Sparkles,
   Compass,
-  Plus,
   Sliders,
-  CheckCircle2,
 } from 'lucide-react';
 import { addMinutesToTime } from '@/lib/utils';
 
@@ -47,7 +44,8 @@ export default function TripWorkspacePage() {
   } = useTripStore();
 
   const [isLoaded, setIsLoaded] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'TIMELINE' | 'MAP'>('TIMELINE');
+  const [mainView, setMainView] = useState<'ITINERARY' | 'EXPLORE'>('ITINERARY');
+  const [mobileTab, setMobileTab] = useState<'TIMELINE' | 'EXPLORE' | 'MAP'>('TIMELINE');
 
   // Modals state
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
@@ -86,6 +84,12 @@ export default function TripWorkspacePage() {
     triggerDelayCheck(activityId, newStart);
   };
 
+  const handleLocateOnMap = (lat: number, lng: number, title: string) => {
+    useTripStore.getState().setSelectedMapPoint({ lat, lng, title, category: 'ATTRACTION' });
+    setMainView('ITINERARY');
+    setMobileTab('MAP');
+  };
+
   return (
     <div className="min-h-screen bg-canvas-50 flex flex-col">
       {/* 1. Global Header */}
@@ -98,13 +102,50 @@ export default function TripWorkspacePage() {
 
       {/* 2. Main Content Body */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 flex flex-col pb-24 md:pb-12">
-        {/* Day Selector & Contextual Summary */}
+        {/* Navigation & Controls Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <DaySelector
-            days={currentTrip.days}
-            activeDayIndex={activeDayIndex}
-            onSelectDay={setActiveDayIndex}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <DaySelector
+              days={currentTrip.days}
+              activeDayIndex={activeDayIndex}
+              onSelectDay={(idx) => {
+                setActiveDayIndex(idx);
+                setMainView('ITINERARY');
+                setMobileTab('TIMELINE');
+              }}
+            />
+
+            {/* Desktop View Switcher */}
+            <div className="hidden sm:flex items-center gap-1 bg-canvas-200/90 p-1 rounded-2xl border border-canvas-300/60 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setMainView('ITINERARY')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  mainView === 'ITINERARY'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 text-terracotta-500" />
+                <span>Itinerary</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMainView('EXPLORE')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  mainView === 'EXPLORE'
+                    ? 'bg-white text-emerald-800 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Explore Hub</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                  Phase 2B
+                </span>
+              </button>
+            </div>
+          </div>
 
           {/* Quick Hub buttons: Packing & Splitwise */}
           <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -127,90 +168,115 @@ export default function TripWorkspacePage() {
           </div>
         </div>
 
-        {/* Mobile View Switcher (Timeline vs Map) */}
+        {/* Mobile View Switcher (Timeline vs Explore vs Map) */}
         <div className="md:hidden flex bg-canvas-200/80 p-1 rounded-2xl mb-4">
           <button
             type="button"
-            onClick={() => setMobileTab('TIMELINE')}
+            onClick={() => {
+              setMainView('ITINERARY');
+              setMobileTab('TIMELINE');
+            }}
             className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all ${
-              mobileTab === 'TIMELINE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+              mainView === 'ITINERARY' && mobileTab === 'TIMELINE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
             }`}
           >
-            Itinerary Schedule
+            Timeline
           </button>
           <button
             type="button"
-            onClick={() => setMobileTab('MAP')}
+            onClick={() => {
+              setMainView('EXPLORE');
+              setMobileTab('EXPLORE');
+            }}
             className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all ${
-              mobileTab === 'MAP' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+              mainView === 'EXPLORE' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-600'
             }`}
           >
-            Spatial Map View
+            Explore
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMainView('ITINERARY');
+              setMobileTab('MAP');
+            }}
+            className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all ${
+              mainView === 'ITINERARY' && mobileTab === 'MAP' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+            }`}
+          >
+            Map
           </button>
         </div>
 
-        {/* Dual Pane Layout: Left Itinerary Timeline, Right Interactive Spatial Map */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-          {/* Left: Day Timeline (Cols 7 on Desktop) */}
-          <div
-            className={`md:col-span-7 space-y-4 ${
-              mobileTab === 'MAP' ? 'hidden md:block' : 'block'
-            }`}
-          >
-            {/* Day Header Info */}
-            <div className="bg-white/80 backdrop-blur-xs p-4 rounded-3xl border border-canvas-200 shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-[11px] uppercase tracking-wider font-bold text-terracotta-600">
-                  Day {activeDay.dayNumber} Theme
+        {/* View Selection: Explore Hub vs Itinerary & Spatial Map */}
+        {mainView === 'EXPLORE' || (mobileTab === 'EXPLORE' && typeof window !== 'undefined' && window.innerWidth < 768) ? (
+          <div className="mt-2">
+            <ExploreHub onViewOnMap={handleLocateOnMap} />
+          </div>
+        ) : (
+          /* Dual Pane Layout: Left Itinerary Timeline, Right Interactive Spatial Map */
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+            {/* Left: Day Timeline (Cols 7 on Desktop) */}
+            <div
+              className={`md:col-span-7 space-y-4 ${
+                mobileTab === 'MAP' ? 'hidden md:block' : 'block'
+              }`}
+            >
+              {/* Day Header Info */}
+              <div className="bg-white/80 backdrop-blur-xs p-4 rounded-3xl border border-canvas-200 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider font-bold text-terracotta-600">
+                    Day {activeDay.dayNumber} Theme
+                  </span>
+                  <h2 className="text-lg font-black text-slate-900">{activeDay.themeTitle}</h2>
+                </div>
+                <span className="text-xs font-semibold bg-canvas-100 text-slate-600 px-3 py-1 rounded-xl">
+                  {activeDay.items.length} Activities
                 </span>
-                <h2 className="text-lg font-black text-slate-900">{activeDay.themeTitle}</h2>
               </div>
-              <span className="text-xs font-semibold bg-canvas-100 text-slate-600 px-3 py-1 rounded-xl">
-                {activeDay.items.length} Activities
-              </span>
+
+              {/* Activities List */}
+              <div className="relative pl-2">
+                {/* Continuous vertical timeline guide line */}
+                <div className="absolute left-[27px] top-4 bottom-8 w-0.5 bg-canvas-300 pointer-events-none" />
+
+                {activeDay.items.map((item) => (
+                  <React.Fragment key={item.id}>
+                    {/* Travel leg connector from previous stop */}
+                    {item.travelFromPrevious && (
+                      <TravelRouteLeg leg={item.travelFromPrevious} />
+                    )}
+
+                    {/* Activity Card */}
+                    <div className="my-2">
+                      <ActivityCard
+                        item={item}
+                        isSelected={item.id === selectedActivityId}
+                        onSelect={() => setSelectedActivityId(item.id)}
+                        onStatusChange={(status) => setActivityStatus(item.id, status)}
+                        onTriggerDelay={(mins) => handleTriggerDelay(item.id, mins)}
+                      />
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
 
-            {/* Activities List */}
-            <div className="relative pl-2">
-              {/* Continuous vertical timeline guide line */}
-              <div className="absolute left-[27px] top-4 bottom-8 w-0.5 bg-canvas-300 pointer-events-none" />
-
-              {activeDay.items.map((item, index) => (
-                <React.Fragment key={item.id}>
-                  {/* Travel leg connector from previous stop */}
-                  {item.travelFromPrevious && (
-                    <TravelRouteLeg leg={item.travelFromPrevious} />
-                  )}
-
-                  {/* Activity Card */}
-                  <div className="my-2">
-                    <ActivityCard
-                      item={item}
-                      isSelected={item.id === selectedActivityId}
-                      onSelect={() => setSelectedActivityId(item.id)}
-                      onStatusChange={(status) => setActivityStatus(item.id, status)}
-                      onTriggerDelay={(mins) => handleTriggerDelay(item.id, mins)}
-                    />
-                  </div>
-                </React.Fragment>
-              ))}
+            {/* Right: Spatial Map Canvas (Cols 5 on Desktop, sticky) */}
+            <div
+              className={`md:col-span-5 md:sticky md:top-24 ${
+                mobileTab === 'TIMELINE' ? 'hidden md:block' : 'block'
+              }`}
+            >
+              <InteractiveMap
+                items={activeDay.items}
+                selectedActivityId={selectedActivityId}
+                onSelectActivity={setSelectedActivityId}
+                destination={currentTrip.destination}
+              />
             </div>
           </div>
-
-          {/* Right: Spatial Map Canvas (Cols 5 on Desktop, sticky) */}
-          <div
-            className={`md:col-span-5 md:sticky md:top-24 ${
-              mobileTab === 'TIMELINE' ? 'hidden md:block' : 'block'
-            }`}
-          >
-            <InteractiveMap
-              items={activeDay.items}
-              selectedActivityId={selectedActivityId}
-              onSelectActivity={setSelectedActivityId}
-              destination={currentTrip.destination}
-            />
-          </div>
-        </div>
+        )}
       </main>
 
       {/* Cascade Resolver Modal */}
@@ -251,12 +317,15 @@ export default function TripWorkspacePage() {
       />
 
       {/* Mobile Ergonomic Bottom Dock */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-canvas-200 px-4 py-2 flex items-center justify-around shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-canvas-200 px-3 py-2 flex items-center justify-around shadow-2xl">
         <button
           type="button"
-          onClick={() => setMobileTab('TIMELINE')}
+          onClick={() => {
+            setMainView('ITINERARY');
+            setMobileTab('TIMELINE');
+          }}
           className={`flex flex-col items-center text-[10px] font-bold ${
-            mobileTab === 'TIMELINE' ? 'text-terracotta-600' : 'text-slate-400'
+            mainView === 'ITINERARY' && mobileTab === 'TIMELINE' ? 'text-terracotta-600' : 'text-slate-400'
           }`}
         >
           <Calendar className="w-5 h-5 mb-0.5" />
@@ -264,9 +333,25 @@ export default function TripWorkspacePage() {
         </button>
         <button
           type="button"
-          onClick={() => setMobileTab('MAP')}
+          onClick={() => {
+            setMainView('EXPLORE');
+            setMobileTab('EXPLORE');
+          }}
           className={`flex flex-col items-center text-[10px] font-bold ${
-            mobileTab === 'MAP' ? 'text-terracotta-600' : 'text-slate-400'
+            mainView === 'EXPLORE' ? 'text-emerald-600' : 'text-slate-400'
+          }`}
+        >
+          <Compass className="w-5 h-5 mb-0.5" />
+          <span>Explore</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMainView('ITINERARY');
+            setMobileTab('MAP');
+          }}
+          className={`flex flex-col items-center text-[10px] font-bold ${
+            mainView === 'ITINERARY' && mobileTab === 'MAP' ? 'text-terracotta-600' : 'text-slate-400'
           }`}
         >
           <Map className="w-5 h-5 mb-0.5" />

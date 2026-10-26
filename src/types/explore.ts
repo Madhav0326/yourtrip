@@ -1,4 +1,4 @@
-import { ProvenanceValue } from './trip';
+import { DataProvenance, ProvenanceValue } from './trip';
 
 /**
  * Phase 2 Separated Domain Models for YourTrip (TripOS)
@@ -12,10 +12,12 @@ export interface DiscoverablePlace {
   lat: number;
   lng: number;
   category: 'ATTRACTION' | 'FOOD' | 'STAY' | 'RENTAL' | 'BEACH' | 'CULTURE' | 'NATURE';
+  description?: string;
   photos?: string[];
-  rating?: number;
+  rating?: ProvenanceValue<number>;
   whyRecommended?: string;
-  provenance: ProvenanceValue<string>;
+  provenance: DataProvenance;
+  provenanceNote?: string;
 }
 
 export interface AttractionOption extends DiscoverablePlace {
@@ -70,3 +72,6 @@ export interface TransportOption {
   comfortLevel: 'HIGH' | 'MEDIUM' | 'BUDGET';
   trafficCondition: ProvenanceValue<'LIGHT' | 'MODERATE' | 'HEAVY'>;
 }
+
+export type ExploreCategoryFilter = 'ALL' | 'ATTRACTION' | 'BEACH' | 'CULTURE' | 'NATURE';
+export type ExploreSortOption = 'RECOMMENDED' | 'RATING' | 'DURATION';
